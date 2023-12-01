@@ -18,7 +18,7 @@ function Dictionary() {
   const [fileName, setFileName] = useState("");
   const [ischanged, setischanged] = useState("true");
   const [reloadView, setReloadView] = useState(false);
-  const [exists, setexists] = useState(false);
+  const [, setexists] = useState(false);
   const [popup,setPopup] = useState(false);
   const [errors,setErrors]=useState("");
 
@@ -78,10 +78,11 @@ function Dictionary() {
   const handleSubCategoryChange = (e) => {
     const selectedSubCategoryId = e.target.value;
     setSelectedSubCategory(selectedSubCategoryId);
+    console.log(selectedSubCategoryId)
     setErrors("");
   };
   
-  const HandleSubmit = () => {
+  const HandleSubmit = async() => {
     let newErrors = {};
     if (selectedCategory === "") {
       newErrors.category = "Category is empty";
@@ -96,7 +97,18 @@ function Dictionary() {
       newErrors.excelFile = "File is not selected";
     } 
     if (Object.keys(newErrors).length === 0) {
-      openPopup();
+      try {
+        const res = await axios.get(`http://localhost:9090/checkDataExists/${selectedSubCategory}`);
+  
+        if (res.data.length > 0) {
+          setPopup(true);
+          openPopup()
+        } else {
+          handleFileSubmit();
+        }
+      } catch (error) {
+        console.error("Error while checking data existence:", error);
+      }
     }
     setErrors(newErrors);
   };
@@ -106,6 +118,10 @@ function Dictionary() {
   }
   const closePopup=() => {
     setPopup(!popup);
+    setSelectedCategory("");
+      setSelectedSubCategory("");
+      setSelectedLanguage("");
+      setFileName("")
   }
 
   const handleFile = (e) => {
@@ -134,19 +150,25 @@ function Dictionary() {
   };
 
   const handleFileSubmit = async (e) => {
+    // e.preventDefault();
+
     if (excelFile !== null) {
       const workbook = XLSX.read(excelFile, { type: "buffer" });
       const worksheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[worksheetName];
       const datas = XLSX.utils.sheet_to_json(worksheet);
-      function uploadData(datas) {
+      console.log(datas);
+
+      function uploadData(datas, url) {
         const jsondata = datas;
+
         const data = {
           category_id: selectedSubCategory,
           jsonData: JSON.stringify(jsondata),
         };
+
         axios
-          .put("http://localhost:9090/updateData", data)
+          .put(url, data)
           .then((response) => {
             console.log("Axios Response: ", response.data);
             setReloadView(!reloadView);
@@ -154,32 +176,48 @@ function Dictionary() {
           .catch((error) => {
             console.error("Axios Error: ", error);
           });
-
-          axios
-          .get(`http://localhost:9090/checkDataExists/${selectedSubCategory}`)
-          .then((res) => {
-            if (res.data.length > 0) {
-              console.log("exists");
-              setexists(true);
-              uploadData(datas, "http://localhost:9090/updateExistingData");
-            } else {
-              console.log(res);
-              console.log("does not exists");
-              uploadData(datas, "http://localhost:9090/updateData");
-            }
-          })
-          .catch((error) => {
-            console.error("Error while checking data existence:", error);
-          });  
       }
-      uploadData(datas);
+      
+      uploadData(datas, "http://localhost:9090/updateData");
       setischanged(!ischanged);
       setSelectedCategory("");
       setSelectedSubCategory("");
       setSelectedLanguage("");
-      // setFileName("")
     }
   };
+
+  const handleExistFileSubmit  = async (e) => {
+    // e.preventDefault();
+
+    if (excelFile !== null) {
+      const workbook = XLSX.read(excelFile, { type: "buffer" });
+      const worksheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[worksheetName];
+      const datas = XLSX.utils.sheet_to_json(worksheet);
+      console.log(datas);
+    function uploadData(datas, url) {
+      const jsondata = datas;
+
+      const data = {
+        category_id: selectedSubCategory,
+        jsonData: JSON.stringify(jsondata),
+      };
+
+      axios
+        .put(url, data)
+        .then((response) => {
+          console.log("Axios Response: ", response.data);
+          setReloadView(!reloadView);
+        })
+        .catch((error) => {
+          console.error("Axios Error: ", error);
+        });
+    }
+    uploadData(datas, "http://localhost:9090/updateExistingData");
+    closePopup();
+  }
+
+  }
 
   return (  
       <div>
@@ -233,7 +271,7 @@ function Dictionary() {
                     >
                     <option value="">Select a subcategory</option>
                     {subcategories.map((subcat, index) => (
-                      <option key={index} value={subcat.subcategory_id}>
+                      <option key={index} value={subcat.category_id}>
                         {subcat.name}
                       </option>
                     ))}
@@ -250,7 +288,7 @@ function Dictionary() {
                     id="file"
                     required
                     onChange={handleFile} 
-
+                    
                   />
                   {typeError && <div role="alert">{typeError}</div>}
                 </td>      
@@ -267,12 +305,12 @@ function Dictionary() {
               <div className="main">
                 <div className="popup">
                   <div className="popup_header">
-                    <p className="popup_content">Are you sure?</p>
+                    <p className="popup_content">Are you sure you want to replace the existing file?</p>
                     <p className="x_button" onClick={closePopup}>x</p>
                   </div>
                   <div className="popup_footer">
-                    <button onClick={()=>{
-                      handleFileSubmit();closePopup();}}  className="yes_button">Yes</button>
+                    <button onClick={
+                      handleExistFileSubmit}  className="yes_button">Yes</button>
                     <button className="no_button" onClick={closePopup}>No</button>
                     {popup}
                   </div>
