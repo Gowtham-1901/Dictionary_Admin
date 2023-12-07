@@ -5,6 +5,17 @@ import "./App.css";
 import DictionaryView from "./dictionary_view";
 import Topbar from "./topbar";
 import Sidebar from "./sidebar";
+import {
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  Button,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+} from '@mui/material';
 
 function Dictionary() {
   const [language, setLanguage] = useState([]);
@@ -18,9 +29,15 @@ function Dictionary() {
   const [fileName, setFileName] = useState("");
   const [ischanged, setischanged] = useState("true");
   const [reloadView, setReloadView] = useState(false);
-  const [, setexists] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [popup,setPopup] = useState(false);
-  const [errors,setErrors]=useState("");
+  const [errors,setErrors]=useState({
+    selectedLanguage: '',
+    category: '',
+    subcategory: '',
+    excelFile: '',
+  });
+  const [fieldErrorPopup, setFieldErrorPopup] = useState(false);
 
   useEffect(() => {
     axios
@@ -48,10 +65,6 @@ function Dictionary() {
         }else{
           setCategories([]);
         }
-        setSelectedCategory("");
-        setSelectedSubCategory("");
-        setSubcategories([]);
-        setErrors("");
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -81,6 +94,15 @@ function Dictionary() {
     console.log(selectedSubCategoryId)
     setErrors("");
   };
+
+  
+  const openFieldErrorPopup = () => {
+    setFieldErrorPopup(true);
+    setTimeout(() => {
+      setFieldErrorPopup(false);
+    }, 3000);
+  };
+
   
   const HandleSubmit = async() => {
     let newErrors = {};
@@ -101,16 +123,26 @@ function Dictionary() {
         const res = await axios.get(`http://localhost:9090/checkDataExists/${selectedSubCategory}`);
   
         if (res.data.length > 0) {
+          setErrors({
+            ...newErrors,
+            selectedLanguage: 'Data exists for the selected subcategory',
+          });
           setPopup(true);
           openPopup()
         } else {
           handleFileSubmit();
+          setSubmissionSuccess(true);
+          setTimeout(() => {
+          setSubmissionSuccess(false);
+          }, 3000);
         }
       } catch (error) {
         console.error("Error while checking data existence:", error);
       }
-    }
+    }else{
     setErrors(newErrors);
+    openFieldErrorPopup();
+  }
   };
                                                   
   const openPopup=() =>{
@@ -119,12 +151,15 @@ function Dictionary() {
   const closePopup=() => {
     setPopup(!popup);
     setSelectedCategory("");
-      setSelectedSubCategory("");
-      setSelectedLanguage("");
-      setFileName("")
+    setSelectedSubCategory("");
+    setSelectedLanguage("");
+    setFileName("");
   }
 
-  const handleFile = (e) => {
+  const handleFile = async(e) => {
+
+    console.log("File Handling !!!")
+
     let fileTypes = [
       "application/vnd.ms-excel",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -147,6 +182,10 @@ function Dictionary() {
     } else {
       console.log("Please select your file");
     }
+
+    setTimeout(() => {
+      e.target.value = null;
+    }, 100);
   };
 
   const handleFileSubmit = async (e) => {
@@ -179,12 +218,14 @@ function Dictionary() {
       }
       
       uploadData(datas, "http://localhost:9090/updateData");
-      setischanged(!ischanged);
+      setSelectedLanguage("")
       setSelectedCategory("");
       setSelectedSubCategory("");
-      setSelectedLanguage("");
+      setischanged(!ischanged);
     }
   };
+
+  console.log(fileName)
 
   const handleExistFileSubmit  = async (e) => {
     // e.preventDefault();
@@ -195,7 +236,7 @@ function Dictionary() {
       const worksheet = workbook.Sheets[worksheetName];
       const datas = XLSX.utils.sheet_to_json(worksheet);
       console.log(datas);
-    function uploadData(datas, url) {
+      function uploadData(datas, url) {
       const jsondata = datas;
 
       const data = {
@@ -215,116 +256,142 @@ function Dictionary() {
     }
     uploadData(datas, "http://localhost:9090/updateExistingData");
     closePopup();
+    setSubcategories([])
+    setCategories([])
+    setischanged(!ischanged);
+    setSubmissionSuccess(true);
+          setTimeout(() => {
+            setSubmissionSuccess(false);
+          }, 3000);
+  }
   }
 
-  }
-
-  return (  
-      <div>
+  return (
+    <div>
       <Topbar />
       <div className="dictionary">
         <Sidebar />
         <div className="table1">
           <div className="tables">
-            <table>
-              <thead>
-                <th>Language</th>
-                <th>Category</th>
-                <th>Subcategory</th>
-                <th></th>
-                <th></th>
-              </thead>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontSize: '14px', fontWeight: 'bolder' }}>Language</TableCell>
+                  <TableCell sx={{ fontSize: '14px', fontWeight: 'bolder' }}>Category</TableCell>
+                  <TableCell sx={{ fontSize: '14px', fontWeight: 'bolder' }}>Subcategory</TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableHead>
               <tbody>
-                <td className="body_content">
-                  <select
-                    value={selectedLanguage}
-                    onChange={handleLanguageChange}
-                    className={errors.selectedLanguage ? 'border-red' : ''}
-                    >
-                    <option value="">Select a language</option>
-                    {language.map((lang, index) => (
-                      <option key={index} value={lang.language_id}>
-                        {lang.language_name}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="body_content">
-                <select
-                value={selectedCategory}
-                onChange={handleCategoryChange}
-                className={errors.category ? 'border-red' : ''}
-                >
-                <option value="">Select a category</option>
-                    {categories.map((cat, index) => (
-                      <option key={index} value={cat.category_id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="body_content">
-                  <select
-                    value={selectedSubCategory}
-                    onChange={handleSubCategoryChange}
-                    className={errors.subcategory ? 'border-red' : ''}
-                    >
-                    <option value="">Select a subcategory</option>
-                    {subcategories.map((subcat, index) => (
-                      <option key={index} value={subcat.category_id}>
-                        {subcat.name}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <label htmlFor="file" className={`label ${errors.excelFile ? 'border-red' : ''}`}>
-                    {fileName || "Upload file"}
-                  </label>
-                  <input 
-                   className="input"
-                    type="file"
-                    accept=".xlsx"
-                    id="file"
-                    required
-                    onChange={handleFile} 
-                    
-                  />
-                  {typeError && <div role="alert">{typeError}</div>}
-                </td>      
-                <td>
-                  <button onClick={HandleSubmit} className="submit_button">SUBMIT</button>
-                </td>
+                <TableRow>
+                  <TableCell className="body_content">
+                    <FormControl sx={{ width: '180px'}}>
+                      <InputLabel>Select a language</InputLabel>
+                      <Select
+                        value={selectedLanguage}
+                        onChange={handleLanguageChange}
+                        error={errors.selectedLanguage}
+                      >
+                        <MenuItem value="">Select a language</MenuItem>
+                        {language.map((lang, index) => (
+                          <MenuItem key={index} value={lang.language_id}>
+                            {lang.language_name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                  <TableCell className="body_content">
+                    <FormControl sx={{ width: '180px' }}>
+                      <InputLabel>Select a category</InputLabel>
+                      <Select
+                        value={selectedCategory}
+                        onChange={handleCategoryChange}
+                        error={errors.category}
+                      >
+                        <MenuItem value="">Select a category</MenuItem>
+                        {categories.map((cat, index) => (
+                          <MenuItem key={index} value={cat.category_id}>
+                            {cat.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                  <TableCell className="body_content">
+                    <FormControl sx={{ width: '200px' }}>
+                      <InputLabel>Select a subcategory</InputLabel>
+                      <Select
+                        value={selectedSubCategory}
+                        onChange={handleSubCategoryChange}
+                        error={errors.subcategory}
+                      >
+                        <MenuItem value="">Select a subcategory</MenuItem>
+                        {subcategories.map((subcat, index) => (
+                          <MenuItem key={index} value={subcat.category_id}>
+                            {subcat.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                  <TableCell>
+                    <label htmlFor="file" className={`label ${errors.excelFile ? 'border-red' : ''}`}>
+                      {fileName || "Upload file"}
+                    </label>
+                    <input
+                      className="input"
+                      type="file"
+                      accept=".xlsx"
+                      id="file"
+                      required
+                      onChange={handleFile}
+                    />
+                    {typeError && <div role="alert">{typeError}</div>}
+                  </TableCell>
+                  <TableCell>
+                    <Button onClick={HandleSubmit} className="submit_button">SUBMIT</Button>
+                    {submissionSuccess && (
+                      <div className="success-popup">
+                        Submitted successfully!
+                      </div>
+                    )}
 
+                    {fieldErrorPopup && (
+                      <div className="field-error-popup">
+                        Please select all the fields.
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
               </tbody>
-            </table>
+            </Table>
           </div>
           <div>
             <div className="submit_popup">
-              {popup?
-              <div className="main">
-                <div className="popup">
-                  <div className="popup_header">
-                    <p className="popup_content">Are you sure you want to replace the existing file?</p>
-                    <p className="x_button" onClick={closePopup}>x</p>
+              {popup ?
+                <div className="main">
+                  <div className="popup">
+                    <div className="popup_header">
+                      <p className="popup_content">Are you sure you want to replace the existing file?</p>
+                      <p className="x_button" onClick={closePopup}>x</p>
+                    </div>
+                    <div className="popup_footer">
+                      <Button sx={{ marginTop: '20px', marginRight: '8px'}} onClick={handleExistFileSubmit} className="yes_button">Yes</Button>
+                      <Button sx={{ marginTop: '20px', marginRight: '10px'}} className="no_button" onClick={closePopup}>No</Button>
+                      {popup}
+                    </div>
                   </div>
-                  <div className="popup_footer">
-                    <button onClick={
-                      handleExistFileSubmit}  className="yes_button">Yes</button>
-                    <button className="no_button" onClick={closePopup}>No</button>
-                    {popup}
-                  </div>
-                </div>
-              </div>:""}
+                </div> : ""}
             </div>
           </div>
-         
           <div className="table2">
             <DictionaryView
               ischanged={ischanged}
               reloadView={reloadView}
               key={reloadView}
-            />{" "}
+            />
           </div>
         </div>
       </div>

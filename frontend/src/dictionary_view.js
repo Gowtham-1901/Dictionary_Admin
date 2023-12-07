@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import TextField from "@mui/material/TextField";
+import { TextField, Switch, Table, TableHead, TableBody, TableRow, TableCell, Button } from '@mui/material';
 import axios from "axios";
-
 
 function DictionaryView({ ischanged, reloadView }) {
   const [data, setData] = useState([]);
@@ -60,8 +59,8 @@ function DictionaryView({ ischanged, reloadView }) {
   );
 
   // Calculate the indexes for the slice in the filtered data
-  const indexOfLastItem = currentPage * 7;
-  const indexOfFirstItem = indexOfLastItem - 7;
+  const indexOfLastItem = currentPage * 5;
+  const indexOfFirstItem = indexOfLastItem - 5;
   const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
   // Change page function
@@ -70,40 +69,39 @@ function DictionaryView({ ischanged, reloadView }) {
   
 
   return (
+    <>
     <div className="view_align">
-    <div>
-      <div className="title_bar">
-      <h2 className="title">LIST OF DICTIONARY</h2>
-      <div className="search_bar">
-        <TextField
-          id="outlined-basic"
-          label="Search"
-          value={Search}
-          onChange={handleChange}
-        />
+      <div>
+        <div className="title_bar">
+          <h2 className="title">LIST OF DICTIONARY</h2>
+          <div className="search_bar">
+            <TextField
+              id="outlined-basic"
+              label="Search"
+              value={Search}
+              onChange={handleChange}
+            />
+          </div>
         </div>
-        </div>
-      <div className="view_dictionary">
-        <table>
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th>Subcategory</th>
-              <th>Language</th>
-              <th></th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentItems.map((item, index) => (
-              <tr key={item.id}>
-                <td>{item.parent_category_name}</td>
-                <td>{item.category_name}</td>
-                <td>{item.language_name}</td>
-                <td>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
+        <div className="view_dictionary">
+        <Table sx={{ minWidth: 650, minHeight :200}} size="small" aria-label="a dense table">
+            <TableHead>
+              <TableRow>
+              <TableCell sx={{ fontSize: '14px', fontWeight: 'bolder' }}>Category</TableCell>
+              <TableCell sx={{ fontSize: '14px', fontWeight: 'bolder' }}>Subcategory</TableCell>
+              <TableCell sx={{ fontSize: '14px', fontWeight: 'bolder' }}>Language</TableCell>
+              <TableCell sx={{ fontSize: '14px' }}></TableCell>
+              <TableCell sx={{ fontSize: '14px' }}></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {currentItems.map((item, index) => (
+                <TableRow key={item.id} sx={{ minHeight: '10px' }} size="small">
+                  <TableCell sx={{textAlign: "left"}}>{item.parent_category_name}</TableCell>
+                  <TableCell >{item.category_name}</TableCell>
+                  <TableCell >{item.language_name}</TableCell>
+                  <TableCell>
+                    <Switch
                       onChange={() => {
                         toggleSwitch(index);
                         updateDataInDatabase(
@@ -113,23 +111,23 @@ function DictionaryView({ ischanged, reloadView }) {
                       }}
                       checked={toggleStates[index]}
                     />
-                    <span className="slider round"></span>
-                  </label>
-                </td>
-                <td>{toggleStates[index] ? "Enabled" : "Disabled"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </TableCell>
+                  <TableCell>{toggleStates[index] ? "Enabled" : "Disabled"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
       
     </div>
     <div className="next_back">
-    <button className="back_button" onClick={prevPage} disabled={currentPage === 1}>back</button>
-    <button className="next_button" onClick={nextPage} disabled={indexOfLastItem >= filteredData.length}>next</button>
+    <Button className="back_button" sx={{ marginRight: 1, marginTop: 5.5 }} onClick={prevPage} disabled={currentPage === 1}>back</Button>
+    <Button className="next_button" sx={{ marginRight: 1, marginTop: 5.5 }} onClick={nextPage} disabled={indexOfLastItem >= filteredData.length}>next</Button>
   </div>
-  </div>
+  </>
   );
-}
+};
+
 
 export default DictionaryView;
