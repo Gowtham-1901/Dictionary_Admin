@@ -286,7 +286,7 @@ function Dictionary() {
               <tbody>
                 <TableRow>
                   <TableCell className="body_content">
-                    <FormControl sx={{ width: '180px'}}>
+                    <FormControl sx={{ width: '150px'}}>
                       <InputLabel>Select a language</InputLabel>
                       <Select
                         value={selectedLanguage}
@@ -303,7 +303,7 @@ function Dictionary() {
                     </FormControl>
                   </TableCell>
                   <TableCell className="body_content">
-                    <FormControl sx={{ width: '180px' }}>
+                    <FormControl sx={{ width: '150px' }}>
                       <InputLabel>Select a category</InputLabel>
                       <Select
                         value={selectedCategory}
@@ -320,7 +320,7 @@ function Dictionary() {
                     </FormControl>
                   </TableCell>
                   <TableCell className="body_content">
-                    <FormControl sx={{ width: '200px' }}>
+                    <FormControl sx={{ width: '150px' }}>
                       <InputLabel>Select a subcategory</InputLabel>
                       <Select
                         value={selectedSubCategory}
