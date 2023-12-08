@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { TextField, Switch, Table, TableHead, TableBody, TableRow, TableCell, Button } from '@mui/material';
 import axios from "axios";
 
-function DictionaryView({ ischanged, reloadView }) {
+function DictionaryView({ ischanged, reloadView, setischanged }) {
   const [data, setData] = useState([]);
   const [toggleStates, setToggleStates] = useState([]);
   const [Search,setSearch] = useState("");
@@ -14,9 +14,6 @@ function DictionaryView({ ischanged, reloadView }) {
       .then((res) => {
         if (res.data && res.data.length > 0) {
           setData(res.data);
-          // Initialize toggle states based on data from the database
-          console.log(res.data);
-
           const initialToggleStates = res.data.map((item) => item.is_active);
           setToggleStates(initialToggleStates);
         }
@@ -26,14 +23,15 @@ function DictionaryView({ ischanged, reloadView }) {
       });
   }, [ischanged, reloadView]);
 
-  const toggleSwitch = (index) => {
-    const updatedToggleStates = [...toggleStates];
-    updatedToggleStates[index] = !updatedToggleStates[index];
-    setToggleStates(updatedToggleStates);
-  };
 
-  const updateDataInDatabase = (id, isactive) => {
-    axios
+  // const toggleSwitch = (index) => {
+  //   const updatedToggleStates = [...toggleStates];
+  //   updatedToggleStates[index] = !updatedToggleStates[index];
+  //   setToggleStates(updatedToggleStates);
+  // };
+
+  const updateDataInDatabase = async(id, isactive) => {
+    await axios
       .put(`http://localhost:9090/isactive/${id}`, { isactive })
       .then((res) => {
         if (res.status === 200) {
@@ -58,15 +56,16 @@ function DictionaryView({ ischanged, reloadView }) {
     )
   );
 
-  // Calculate the indexes for the slice in the filtered data
+  // data.sort((a, b) => a.language_name.localeCompare(b.language_name));
+  
   const indexOfLastItem = currentPage * 5;
   const indexOfFirstItem = indexOfLastItem - 5;
   const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Change page function
   const nextPage = () => setCurrentPage(currentPage + 1);
   const prevPage = () => setCurrentPage(currentPage - 1); 
   
+  console.log(currentItems);
 
   return (
     <>
@@ -84,39 +83,42 @@ function DictionaryView({ ischanged, reloadView }) {
           </div>
         </div>
         <div className="view_dictionary">
-        <Table sx={{ minWidth: 650, minHeight :200}} size="small" aria-label="a dense table">
-            <TableHead>
-              <TableRow>
+        <Table sx={{ minWidth: 650, minHeight: 200 }} size="small" aria-label="a dense table">
+          <TableHead>
+            <TableRow>
               <TableCell sx={{ fontSize: '14px', fontWeight: 'bolder' }}>Category</TableCell>
               <TableCell sx={{ fontSize: '14px', fontWeight: 'bolder' }}>Subcategory</TableCell>
               <TableCell sx={{ fontSize: '14px', fontWeight: 'bolder' }}>Language</TableCell>
               <TableCell sx={{ fontSize: '14px' }}></TableCell>
               <TableCell sx={{ fontSize: '14px' }}></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {currentItems.map((item, index) => (
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredData
+              .slice((currentPage - 1) * 5, currentPage * 5)
+              .map((item, index) => (
                 <TableRow key={item.id} sx={{ minHeight: '10px' }} size="small">
-                  <TableCell sx={{textAlign: "left"}}>{item.parent_category_name}</TableCell>
-                  <TableCell >{item.category_name}</TableCell>
-                  <TableCell >{item.language_name}</TableCell>
+                  <TableCell sx={{ textAlign: "left" }}>{item.parent_category_name}</TableCell>
+                  <TableCell>{item.category_name}</TableCell>
+                  <TableCell>{item.language_name}</TableCell>
                   <TableCell>
                     <Switch
-                      onChange={() => {
-                        toggleSwitch(index);
+                      onClick={() => {
                         updateDataInDatabase(
                           item.category_id,
-                          !toggleStates[index]
+                          !toggleStates[index + (currentPage - 1) * 5]
                         );
+                        setischanged(!ischanged);
                       }}
-                      checked={toggleStates[index]}
+                      checked={item.is_active}
                     />
                   </TableCell>
-                  <TableCell>{toggleStates[index] ? "Enabled" : "Disabled"}</TableCell>
+                  <TableCell>{toggleStates[index + (currentPage - 1) * 5] ? "Enabled" : "Disabled"}</TableCell>
                 </TableRow>
               ))}
-            </TableBody>
-          </Table>
+          </TableBody>
+        </Table>
+
         </div>
       </div>
       
@@ -128,6 +130,5 @@ function DictionaryView({ ischanged, reloadView }) {
   </>
   );
 };
-
 
 export default DictionaryView;

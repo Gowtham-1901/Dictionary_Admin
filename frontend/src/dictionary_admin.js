@@ -389,6 +389,7 @@ function Dictionary() {
           <div className="table2">
             <DictionaryView
               ischanged={ischanged}
+              setischanged={setischanged}
               reloadView={reloadView}
               key={reloadView}
             />
